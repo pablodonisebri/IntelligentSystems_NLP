@@ -10,7 +10,7 @@ library(tidyverse)
 #For renaming the columns in the dataset with the column rename
 library(plyr)
 #We change our working directory 
-setwd('/Users/pablodonisebri/Clase/Master/PrimerCuatri/Intelligent Systems')
+
 
 #For getting the tokens from the function tokenize_words()
 library(tokenizers)
@@ -59,7 +59,7 @@ get_sentiments_from_text = function(doc){
   sentiments.count<-sentiments_in_text.grouped %>% dplyr::count(sentiment)
   
   #we got to make an exception for when there is no positive words or negative words the function will return
-  # the same number for both
+  # the same number for both and that is an error.
   if(length(sentiments.count$sentiment)==0) return(data.frame(sentiment=c('positive', 'negative'),
                                                               count= c(0,0)) )
   if(length(sentiments.count$sentiment)==1){
@@ -100,8 +100,11 @@ sentiment<- function(doc){
 
 #Data  was got from: https://www.kaggle.com/datafiniti/consumer-reviews-of-amazon-products?select=1429_1.csv
 
-#We read the csv
-data<-read.csv("https://github.com/pablodonisebri/Curso2020-2021-ODKG/blob/master/HandsOn/Group08/csv/ContratosEmergenciaSMS-updated-with-links.csv", header=TRUE, sep=",")
+#We read the csv from a URL so there is no need to store the file anywhere
+library(RCurl)
+url <- getURL("https://raw.githubusercontent.com/pablodonisebri/IntelligentSystems_NLP/master/1429_1.csv")
+data <- read.csv(text = url)
+
 #We only want the name of the product and the reviews column for this work 
 reviews<- as.data.frame(dplyr::select(data,c('reviews.title','reviews.text','name')))
 
@@ -138,28 +141,48 @@ for(i in 1:length(corpus)) {
   text.sentiments<-c(text.sentiments,sentiment(corpus[i]))
   }
   
+#We look at a positive comment 
+text.sentiments[1000]
+corpus[1000]$content
+
+#We look at a negative comment 
+text.sentiments[491]
+corpus[491]$content
+
+#We look at a neutral  comment 
+text.sentiments[109]
+corpus[109]$content
+
+#We look at a missclassified instance
+#We see that is negative
+text.sentiments[39] 
+#The content shows that is not negative (not disapointed is not classfied well)
+corpus[39]$content
+
 
 #We add to the metadata the sentiment of the text
 meta(corpus,tag = 'sentiment') <- text.sentiments
 
-#The positive comments in a corpus
+#The positive comments grouped in a corpus
 corpus.positiveComments<-corpus[meta(corpus)$sentiment == 'positive']
-#The negative comments in a corpus
+#The negative comments grouped in a corpus
 corpus.negativeComments<-corpus[meta(corpus)$sentiment == 'negative']
-#The neutral comments in a corpus
+#The neutral comments grouped in a corpus
 corpus.neutralComments<-corpus[meta(corpus)$sentiment == 'neutral']
 
-#We can now do a bit of analysis in the positive comments to see the words that 
-#are found more frequently
+#We can now do a bit of analysis in the positive comments corpus to see the words that 
+#are found more frequently (taken from the handsOn code)
 tdm.positive = TermDocumentMatrix(corpus.positiveComments)
 
-
+#We get the count for the frequency of each word (taken from the handsOn code)
 freq<-rowSums(as.matrix(tdm.positive))
+#We want to see the frequency of the positive sentiments
 sentiments.positive.frequency<-freq[sentiments.positive]
+#We drop the null values that appeared in the previous line of code
 sentiments.positive.frequency<- na.omit(sentiments.positive.frequency)
-
+#We sort the results in a descending manner
 sentiments.positive.frequency<- sort(sentiments.positive.frequency,decreasing=T)
-
+#We look at the top 20
 head(sentiments.positive.frequency,20)
 
 
